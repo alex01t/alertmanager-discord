@@ -100,38 +100,30 @@ func sendWebhook(amo *alertManOut) {
 	for status, alerts := range groupedAlerts {
 		DO := discordOut{}
 
-		RichEmbed := discordEmbed{
-			Title:       fmt.Sprintf("[%s:%d] %s", strings.ToUpper(status), len(alerts), amo.CommonLabels.Alertname),
-			Description: amo.CommonAnnotations.Summary,
-			Color:       ColorGrey,
-			Fields:      []discordEmbedField{},
-		}
-
-		if status == "firing" {
-			RichEmbed.Color = ColorRed
-		} else if status == "resolved" {
-			RichEmbed.Color = ColorGreen
-		}
-
-		if amo.CommonAnnotations.Summary != "" {
-			DO.Content = fmt.Sprintf(" === %s === \n", amo.CommonAnnotations.Summary)
-		}
+		DO.Embeds = []discordEmbed{}
 
 		for _, alert := range alerts {
 			realname := alert.Labels["instance"]
 			if strings.Contains(realname, "localhost") && alert.Labels["exported_instance"] != "" {
 				realname = alert.Labels["exported_instance"]
 			}
-
-			RichEmbed.Fields = append(RichEmbed.Fields, discordEmbedField{
-				Name:  fmt.Sprintf("[%s]: %s on %s", strings.ToUpper(status), alert.Labels["alertname"], realname),
-				Value: alert.Annotations.Description,
-			})
+			color := ColorGrey;
+			if status == "firing" {
+				color = ColorRed
+			} else if status == "resolved" {
+				color = ColorGreen
+			}
+			desc := fmt.Sprintf("[%s] %s on %s: %s", strings.ToUpper(status), alert.Labels["alertname"], realname, alert.Annotations.Description)
+			x := discordEmbed{
+				Title:       "",
+				Description: desc,
+				Color:       color,
+			}
+			DO.Embeds = append(DO.Embeds, x)
 		}
 
-		DO.Embeds = []discordEmbed{RichEmbed}
-
 		DOD, _ := json.Marshal(DO)
+		log.Printf("sending to discord %s - %s ", *whURL, DOD)
 		http.Post(*whURL, "application/json", bytes.NewReader(DOD))
 	}
 }
@@ -174,12 +166,12 @@ func main() {
 	log.Printf("Listening on: %s", *listenAddress)
 	log.Fatalf("Failed to listen on HTTP: %v",
 		http.ListenAndServe(*listenAddress, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.RawPath)
 
 			b, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				panic(err)
 			}
+			log.Printf("%s - [%s] %s", r.Host, r.Method, b)
 
 			amo := alertManOut{}
 			err = json.Unmarshal(b, &amo)

@@ -1,0 +1,15 @@
+version: '3.4'
+services:
+  alertmanager:
+    image: prom/alertmanager
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - 9093:9093
+  alertmanager-discord:
+    build:
+      context: ../
+    environment:
+      DISCORD_WEBHOOK: https://discord.com/api/webhooks/xx/xx
+    ports:
+    - 9094:9094

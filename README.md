@@ -57,3 +57,61 @@ receivers:
 ## Docker
 
 If you run a fancy docker/k8s infra, you can find the docker hub repo here: https://hub.docker.com/r/benjojo/alertmanager-discord/
+
+
+### how to check webhook
+
+    export DISCORD_WEBHOOK=https://discord.com/api/webhooks/xx/xx
+    
+    curl -s $DISCORD_WEBHOOK -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST \
+    --data '
+        {
+            "content":"",
+            "embeds":[
+                {"title":"",
+                 "description":"FIRE: alertname on 1.example.net",
+                 "color":10038562
+                },
+                {"title":"",
+                 "description":"RESOLVE: alertname on 2.example.net",
+                 "color":3066993
+                }
+            ]
+        }'
+    
+### how to test this app
+
+    cd ./example && docker-compose up --build
+
+and send an alert
+    
+    curl -XPOST localhost:9093/api/v1/alerts -d '[
+    {
+        "status": "firing",
+        "labels": {
+            "alertname": "KubePodCrashLooping",
+            "service": "postgresql-1",
+            "severity":"critical",
+            "instance": "172.1.1.1:8080"
+        },
+        "annotations": {
+            "summary": "summary",
+            "description": "Pod my-pod-597fc9b5bb-55kdb (service) is restarting 0.34 times / 5 minutes."
+        },
+        "generatorURL": "xxx"
+    },
+    {
+        "status": "firing",
+        "labels": {
+            "alertname": "KubePodCrashLooping",
+            "service": "postgresql-1",
+            "severity":"critical",
+            "instance": "172.1.1.2:8080"
+        },
+        "annotations": {
+            "summary": "summary",
+            "description": "Pod my/pod-597fc9b5bb-9b5bb (service) is restarting 0.34 times / 5 minutes."
+        },
+        "generatorURL": "xxx"
+    }
+    ]'
