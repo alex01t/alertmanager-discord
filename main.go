@@ -24,6 +24,7 @@ const (
 type alertManAlert struct {
 	Annotations struct {
 		Description string `json:"description"`
+		Message     string `json:"message"`
 		Summary     string `json:"summary"`
 	} `json:"annotations"`
 	EndsAt       string            `json:"endsAt"`
@@ -113,7 +114,14 @@ func sendWebhook(amo *alertManOut) {
 			} else if status == "resolved" {
 				color = ColorGreen
 			}
-			desc := fmt.Sprintf("[%s] %s on %s: %s", strings.ToUpper(status), alert.Labels["alertname"], realname, alert.Annotations.Description)
+			msg := alert.Annotations.Message
+			if msg == "" {
+				msg = alert.Annotations.Description
+			}
+			if msg == "" {
+				msg = alert.Annotations.Summary
+			}
+			desc := fmt.Sprintf("[%s] %s on %s: %s", strings.ToUpper(status), alert.Labels["alertname"], realname, msg)
 			x := discordEmbed{
 				Title:       "",
 				Description: desc,
